@@ -12,18 +12,32 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.manifold import TSNE
 import plotly.express as px
-
 import streamlit as st
 
-df_full = pd.read_csv('../articles1.csv')
-df = df_full.sample(n=1000)
-#create a function to clean the text
-lemma = WordNetLemmatizer()
-stopwords_add = []
+st.title('20 News Groups Clustering')
 
+st.sidebar.header('Inputs for Clustering')
+
+optimal_clusters = st.sidebar.number_input('Enter the number of clusters', min_value=2, max_value=50, step=1)
+
+stopwords_add = st.sidebar.text_area('Enter Program Specific Stopwords')
+stopwords_add = [x.strip() for x in stopwords_add.split(',')]
+
+file_loc = '../articles1.csv'
+
+#@st.cache
+def load_data():
+    full = pd.read_csv(file_loc)
+    sample = full.sample(n=1000, random_state=10)
+    return sample
+
+# constants for preprocessing function
+lemma = WordNetLemmatizer()
+#stopwords_add = []
 stoplist = stopwords.words('english') + list(string.punctuation) + stopwords_add
 
-@st.cache()
+# create a function to clean the text
+@st.cache
 def preprocess(x):
     x = x.strip()
     a = string.punctuation.replace('-','')
@@ -34,29 +48,33 @@ def preprocess(x):
     x = " ".join(word for word in x if word not in stoplist)
     return x                                     # join the list
 
-#data_preprocess_state = st.text('Preprocessing Text Data...')
+# load the dataset
+df = load_data()
+# run preprocessing
+# data_preprocess_state = st.text('Preprocessing Text Data...')
 df['text_processed'] = df['content'].apply(preprocess)
-#data_preprocess_state.text('Preprocessing Text Data Complete!')
+# data_preprocess_state.text('Preprocessing Text Data Complete!')
 
 documents = df['text_processed'].to_list()
-
 vectorizer = TfidfVectorizer(
                         ngram_range=(1,2),
                         min_df = 5,
                         max_df = 0.95,
                         max_features = 8000)
 
+#@st.cache
+def vectorize(doc):
+    x = vectorizer.fit_transform(doc)
+    return x
+
 #data_vectorize_state = st.text('Vectorizing Data...')
-x = vectorizer.fit_transform(documents)
+x = vectorize(documents)
 #data_vectorize_state.text('Vectorizing Complete!')
 
-#ENTER OPTIMAL CLUSTER NUMBER
-optimal_clusters = 20
+# Begin cluster process
 random_st = 21
-
 clusters_final = MiniBatchKMeans(n_clusters=optimal_clusters, init_size=1024, batch_size=2048,
                                  random_state=random_st).fit_predict(x)
-
 df['clusters_final_ID'] = pd.Series(clusters_final, index=df.index)
 
 def get_top_keywords2(data, clusters, labels, n_terms):
@@ -87,17 +105,26 @@ df['y_tSNE']=y_tSNE
 
 #create a plotly express scatter plot
 
+# multiselect to select clusters to isolate for graph?
+
 fig = px.scatter(data_frame=df, x='x_tSNE', y='y_tSNE', color='clusters_final_ID',
                  hover_data=['title'])
 
-#create streamlit app code
-st.title('20 News Groups Clustering')
+# create a filtered dataframe to display
 
-#st.subheader('All Data')
-st.dataframe(df)
+display_cols = ['id', 'title', 'publication', 'author', 'date', 'clusters_final_ID']
+df_display = df[display_cols]
+
+#create streamlit app code
+
+# if st.checkbox('Show Article Level Data'):
+#     st.subheader('Article Level Data')
+#     st.write(df_display)
 
 #st.subheader('Cluster Top 10 Keywords')
 st.dataframe(df_keywords)
 
 #st.subheader('T-SNE Plot')
 st.plotly_chart(fig)
+
+st.dataframe(df_display)
