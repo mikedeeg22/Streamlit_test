@@ -6,7 +6,7 @@ from datetime import datetime
 
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.manifold import TSNE
 import plotly.express as px
@@ -24,7 +24,7 @@ stopwords_add = [x.strip() for x in stopwords_add.split(',')]
 
 file_loc = '../articles1.csv'
 
-#@st.cache
+@st.cache(allow_output_mutation=True, ttl=60*5, max_entries=20)
 def load_data():
     full = pd.read_csv(file_loc)
     sample = full.sample(n=1000, random_state=10)
@@ -39,10 +39,10 @@ lemma = WordNetLemmatizer()
 stoplist = stopwords.words('english') + list(string.punctuation) + stopwords_add
 
 # create a function to clean the text
-@st.cache
+@st.cache(ttl=60*5)
 def preprocess(x):
     x = x.strip()
-    a = string.punctuation.replace('-','')
+    a = string.punctuation.replace('-', '')
     x = re.sub(r'[{}]'.format(a),'', x.lower())
     x = [w for w in x.split() if w not in stoplist and not w.isdigit()]  # remove stopwords
     x = " ".join(lemma.lemmatize(word) for word in x if word not in stoplist)
@@ -53,10 +53,6 @@ def preprocess(x):
 # load the dataset
 df = load_data()
 df['id'] = df['id'].astype(str)
-#take random 500 article id's
-# all_ids= df['id'].to_list()
-# test_ids = np.random.choice(all_ids, 10)
-# print(test_ids)
 #isolate data to only article ID's specified in user input
 df2 = df[df['id'].isin(article_ids)]
 # run preprocessing
@@ -150,13 +146,17 @@ df_display = df2[display_cols]
 #     st.subheader('Article Level Data')
 #     st.write(df_display)
 
+#col1, col2 = st.beta_columns([3,1])
+
 #st.subheader('Cluster Top 10 Keywords')
 st.dataframe(df_keywords)
+#col2.dataframe(df_keywords)
 if st.button('Download Top Keywords as CSV'):
     tmp_download_link = download_link(df_keywords, 'Top_Keywords_Test.csv', 'Click Here to Download Top Keywords!')
     st.markdown(tmp_download_link, unsafe_allow_html=True)
 #st.subheader('T-SNE Plot')
 st.plotly_chart(fig)
+#col1.plotly_chart(fig)
 
 st.dataframe(df_display)
 if st.button('Download Document Data as CSV'):
