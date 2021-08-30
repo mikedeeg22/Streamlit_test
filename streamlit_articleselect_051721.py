@@ -17,10 +17,13 @@ import streamlit as st
 import base64
 
 @st.cache(allow_output_mutation=True, ttl=60*5, max_entries=20)
-def load_data():
+def load_data(article_ids):
     full = pd.read_csv(file_loc)
-    sample = full.sample(n=1000, random_state=10)
-    return sample
+#    sample = full.sample(n=1000, random_state=10)
+    full['id'] = full['id'].astype(str)
+    # isolate data to only article ID's specified in user input
+    filtered = full[full['id'].isin(article_ids)]
+    return filtered
 
 # create a function to clean the text
 @st.cache(ttl=60*5)
@@ -74,11 +77,7 @@ def download_link(object_to_download, download_filename, download_link_text):
 
 def main():
     # load the dataset
-    df = load_data()
-    df['id'] = df['id'].astype(str)
-
-    #isolate data to only article ID's specified in user input
-    df2 = df[df['id'].isin(article_ids)]
+    df2 = load_data(article_ids)
 
     # run preprocessing
     # data_preprocess_state = st.text('Preprocessing Text Data...')
