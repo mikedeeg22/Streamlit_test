@@ -236,6 +236,8 @@ st.sidebar.markdown('3. Optional: Enter any undesirable words that are displayin
                     'into the stopwords list (comma delimited)')
 st.sidebar.markdown('4. Optional: Adjust any other parameters as desired (n_componenets, max_df, min_df')
 st.sidebar.markdown('5. Modify the settings and iterate as needed!')
+link='[ESPN](http://espn.com)'
+st.sidebar.markdown(link, unsafe_allow_html=True)
 
 st.sidebar.subheader('Info on Optional Parameters:')
 st.sidebar.markdown('**N Components:** When reducing the dimensionality of highly dimensional datasets, this value '
